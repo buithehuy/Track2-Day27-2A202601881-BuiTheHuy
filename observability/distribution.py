@@ -28,14 +28,19 @@ def detect_distribution_shift(
     base_q = np.quantile(base, [0.1, 0.5, 0.9])
     scale = max(float(np.std(base)), abs(base_mean) * 0.01, 1e-12)
     quantile_score = float(np.max(np.abs(cur_q - base_q)) / scale)
+    combined = np.sort(np.concatenate([cur, base]))
+    ks_score = max(
+        abs(float(np.mean(base <= point)) - float(np.mean(cur <= point)))
+        for point in combined
+    ) * 4.0
     if base_mean == 0:
         mean_score = float("inf") if cur_mean != 0 else 0.0
     else:
         mean_score = abs(cur_mean - base_mean) / max(abs(base_mean), 1e-12)
-    score = max(quantile_score, mean_score)
+    score = max(quantile_score, mean_score, ks_score)
     return {
         "is_anomaly": bool(score >= ratio_threshold),
         "score": float(score),
         "method": "quantile_mean_shift",
-        "reason": f"baseline_mean={base_mean:.3f}, current_mean={cur_mean:.3f}; quantile_score={quantile_score:.3f}",
+        "reason": f"baseline_mean={base_mean:.3f}, current_mean={cur_mean:.3f}; quantile_score={quantile_score:.3f}; ks_score={ks_score:.3f}",
     }
