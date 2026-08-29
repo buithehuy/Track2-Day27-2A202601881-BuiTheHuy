@@ -6,6 +6,5 @@ warehouse/*.duckdb
 dbt_project/target/
 dbt_project/logs/
 dbt_project/dbt_packages/
-reports/latest_metrics.json
 .streamlit/
 .DS_Store
