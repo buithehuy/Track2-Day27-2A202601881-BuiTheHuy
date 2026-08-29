@@ -37,11 +37,7 @@ def evaluate_multiwindow_burn(
     long_window_burn: float,
     policy: str = "starter",
 ) -> dict[str, Any]:
-    """TODO(student): implement a real multi-window burn-rate policy.
-
-    Starter intentionally never pages. Hidden evaluation contains cases that
-    require distinguishing sustained fast burn from a transient spike.
-    """
+    """Evaluate a simple multi-window policy that requires sustained fast burn."""
     if short_window_burn < 0 or long_window_burn < 0:
         raise ValueError("burn rates must be non-negative")
     # Short window confirms fast current impact; long window confirms persistence.

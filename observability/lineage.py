@@ -30,10 +30,7 @@ def get_downstream_assets(graph: dict[str, list[str]], start: str) -> list[str]:
 def get_column_downstream(
     column_graph: dict[str, list[str]], start_column: str
 ) -> list[str]:
-    """TODO(student): implement column-level traversal.
-
-    Starter returns only direct children, so transitive hidden cases will fail.
-    """
+    """Return all transitive downstream columns in BFS order."""
     seen = {start_column}
     q: deque[str] = deque([start_column])
     out: list[str] = []

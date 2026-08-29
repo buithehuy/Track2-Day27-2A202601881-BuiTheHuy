@@ -72,9 +72,8 @@ def detect_anomaly(
     - `mad`: MAD example.
     - `auto`: still uses naive z-score and ignores context.
 
-    TODO(student): make `auto` context-aware. Useful context keys used by the
-    instructor may include `day_of_week`, `same_segment_history`,
-    `metric_name`, `known_event`, and `trend`.
+    ``auto`` uses same-segment history when supplied and otherwise falls back
+    to a robust MAD baseline or z-score when history is too short.
     """
     if method == "mad":
         return mad_detector(current, history)
