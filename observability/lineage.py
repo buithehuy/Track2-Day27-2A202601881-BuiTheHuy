@@ -19,7 +19,7 @@ def get_downstream_assets(graph: dict[str, list[str]], start: str) -> list[str]:
     out: list[str] = []
     while q:
         node = q.popleft()
-        for child in graph.get(node, []):
+        for child in graph.get(node, []) or []:
             if child not in seen:
                 seen.add(child)
                 out.append(child)
@@ -30,18 +30,8 @@ def get_downstream_assets(graph: dict[str, list[str]], start: str) -> list[str]:
 def get_column_downstream(
     column_graph: dict[str, list[str]], start_column: str
 ) -> list[str]:
-    """Return all transitive downstream columns in BFS order."""
-    seen = {start_column}
-    q: deque[str] = deque([start_column])
-    out: list[str] = []
-    while q:
-        node = q.popleft()
-        for child in column_graph.get(node, []):
-            if child not in seen:
-                seen.add(child)
-                out.append(child)
-                q.append(child)
-    return out
+    """Return every downstream column in deterministic breadth-first order."""
+    return get_downstream_assets(column_graph, start_column)
 
 
 def extract_dbt_dataset_graph(manifest_path: str | Path) -> dict[str, list[str]]:

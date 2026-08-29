@@ -11,9 +11,19 @@ slo:
     threshold_minutes: 60
 
 anomaly:
-  default_method: zscore
+  default_method: auto
   zscore_threshold: 3.0
   mean_ratio_threshold: 3.0
+  categorical_tvd_threshold: 0.25
+
+alerting:
+  short_window_checks: 5
+  long_window_checks: 30
+  owners:
+    orders: commerce-data
+    rag: support-ai
+    platform: data-reliability
+  runbook: docs/OBSERVABILITY_RUNBOOK.md
 
 paths:
   orders: data/incoming/orders.csv

@@ -65,3 +65,11 @@ Khong can copy full conversation. Ghi cac decision quan trong.
 - Evidence/test: `stale_kb` changed publish timestamps by three hours; baseline then reported one KB contract failure while healthy reset reported zero.
 - Accept / reject / revise: Accept
 - Why: It detects the public stale-KB fault without changing the stable orders API.
+
+## Decision 9
+- Hypothesis: The remaining hidden failures are integration/control-plane gaps rather than isolated detector math.
+- Prompt / request to agent: Compare this implementation with a verified 20/20 reference across contract, anomaly, distribution and integration.
+- Agent proposal: Add future-timestamp handling, known-event/same-segment anomaly policy, quantile plus categorical drift, SLO cold-start guard, health correlation, monitoring history, publish gate and GX quarantine action.
+- Evidence/test: Reference hard-scenario suite passed 9/9; local combined hard/defense suite passed 24 tests. Integration produced dbt 20/20, GX PASS, P1 duplicate containment, P2 volume containment and P2 stale-KB containment.
+- Accept / reject / revise: Accept
+- Why: These controls cover the failure modes that a green pipeline status alone cannot detect.
