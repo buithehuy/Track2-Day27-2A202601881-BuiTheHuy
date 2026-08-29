@@ -11,6 +11,8 @@ import numpy as np
 
 
 def zscore_detector(current: float, history: Iterable[float], threshold: float = 3.0) -> dict[str, Any]:
+    if not np.isfinite(float(current)):
+        return {"is_anomaly": True, "score": float("inf"), "method": "zscore", "reason": "current_nonfinite"}
     values = np.asarray(list(history), dtype=float)
     values = values[np.isfinite(values)]
     if values.size < 3:
@@ -34,6 +36,8 @@ def mad_detector(current: float, history: Iterable[float], threshold: float = 3.
 
     Students may improve this function and/or use it from auto mode.
     """
+    if not np.isfinite(float(current)):
+        return {"is_anomaly": True, "score": float("inf"), "method": "mad", "reason": "current_nonfinite"}
     values = np.asarray(list(history), dtype=float)
     values = values[np.isfinite(values)]
     if values.size < 5:
