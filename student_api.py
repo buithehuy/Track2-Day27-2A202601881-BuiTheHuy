@@ -17,8 +17,15 @@ from observability.slo import calculate_slo, evaluate_multiwindow_burn
 from src.contract_validator import load_contract, validate_dataframe
 
 
-def validate_orders(df: pd.DataFrame, contract_path: str | Path) -> list[dict[str, Any]]:
-    return validate_dataframe(df, load_contract(contract_path))
+def validate_orders(
+    df: pd.DataFrame,
+    contract_path: str | Path,
+    *,
+    reference_time: Any | None = None,
+) -> list[dict[str, Any]]:
+    return validate_dataframe(
+        df, load_contract(contract_path), reference_time=reference_time
+    )
 
 
 def detect_metric(

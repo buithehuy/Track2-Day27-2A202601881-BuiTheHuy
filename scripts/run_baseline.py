@@ -23,7 +23,9 @@ def main() -> None:
     orders = pd.read_csv(ROOT / "data" / "incoming" / "orders.csv")
     history = pd.read_csv(ROOT / "data" / "history" / "metrics_history.csv")
     contract = load_contract(ROOT / "contracts" / "orders_contract.yaml")
-    issues = validate_dataframe(orders, contract)
+    issues = validate_dataframe(
+        orders, contract, reference_time=datetime.now(timezone.utc)
+    )
     failed = failed_issues(issues)
     critical_failed = failed_issues(issues, min_severity="critical")
 

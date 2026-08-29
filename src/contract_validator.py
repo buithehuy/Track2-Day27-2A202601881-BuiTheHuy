@@ -67,7 +67,12 @@ def load_contract(path: str | Path) -> dict[str, Any]:
         return yaml.safe_load(f)
 
 
-def validate_dataframe(df: pd.DataFrame, contract: dict[str, Any]) -> list[dict[str, Any]]:
+def validate_dataframe(
+    df: pd.DataFrame,
+    contract: dict[str, Any],
+    *,
+    reference_time: Any | None = None,
+) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
     columns = contract.get("columns", {})
 
@@ -162,6 +167,44 @@ def validate_dataframe(df: pd.DataFrame, contract: dict[str, Any]) -> list[dict[
                     details=f"invalid_count={invalid_count}",
                 )
             )
+
+    freshness = contract.get("freshness") or {}
+    freshness_column = freshness.get("column")
+    # Explicit reference time keeps tests deterministic. Production callers
+    # pass the current UTC time explicitly.
+    if freshness_column and freshness_column in df.columns and reference_time is not None:
+        parsed = pd.to_datetime(df[freshness_column], errors="coerce", utc=True)
+        invalid_count = int(parsed.isna().sum())
+        if invalid_count:
+            issues.append(_issue(
+                "freshness_parse",
+                column=freshness_column,
+                severity=freshness.get("severity", "warning"),
+                passed=False,
+                details=f"invalid_count={invalid_count}",
+            ))
+        else:
+            reference = pd.Timestamp(reference_time)
+            if reference.tzinfo is None:
+                reference = reference.tz_localize("UTC")
+            latest = parsed.max()
+            delay_minutes = max(0.0, (reference - latest).total_seconds() / 60.0)
+            max_delay = float(freshness.get("max_delay_minutes", 0))
+            issues.append(_issue(
+                "freshness",
+                column=freshness_column,
+                severity=freshness.get("severity", "warning"),
+                passed=(delay_minutes <= max_delay),
+                details=f"delay_minutes={delay_minutes:.2f}; max_delay_minutes={max_delay:.2f}",
+            ))
+    elif freshness_column and freshness_column not in df.columns:
+        issues.append(_issue(
+            "freshness_column",
+            column=freshness_column,
+            severity=freshness.get("severity", "warning"),
+            passed=False,
+            details=f"Missing freshness column: {freshness_column}",
+        ))
 
     return issues
 
