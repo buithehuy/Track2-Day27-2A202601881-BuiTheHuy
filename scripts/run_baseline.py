@@ -32,9 +32,12 @@ def main() -> None:
     # Public example: segment by weekday before applying the simple detector.
     # Hidden evaluation still challenges students to make detect_metric(..., context=...)
     # context-aware instead of relying on caller-side preprocessing.
-    current_dow = datetime.now().weekday()
-    segment = history.loc[history["day_of_week"] == current_dow, "row_count"].tail(8).tolist()
-    row_history = segment if len(segment) >= 3 else history["row_count"].tail(14).tolist()
+    order_dates = pd.to_datetime(orders["created_at"], utc=True, errors="coerce")
+    current_dow = int(order_dates.max().weekday()) if order_dates.notna().any() else datetime.now().weekday()
+    # The supplied history contains a weekday pattern, but the generated
+    # healthy batch is not guaranteed to share that pattern. Keep the
+    # context available to the detector while using a broad robust baseline.
+    row_history = history["row_count"].tail(14).tolist()
     row_result = detect_anomaly(
         len(orders),
         row_history,
@@ -48,6 +51,12 @@ def main() -> None:
     ).total_seconds() / 60.0
 
     docs = load_jsonl(ROOT / "data" / "incoming" / "kb_documents.jsonl")
+    kb_contract = load_contract(ROOT / "contracts" / "kb_contract.yaml")
+    kb_frame = pd.DataFrame(docs)
+    kb_issues = validate_dataframe(
+        kb_frame, kb_contract, reference_time=datetime.now(timezone.utc)
+    )
+    kb_failed = failed_issues(kb_issues)
     text_result = detect_text_length_shift(
         [d["content"] for d in docs], history["mean_text_length"].tail(14).tolist()
     )
@@ -68,6 +77,8 @@ def main() -> None:
         "row_count_anomaly": row_result,
         "freshness_minutes": freshness_minutes,
         "kb_text_length_signal": text_result,
+        "kb_failed_contract_checks": len(kb_failed),
+        "kb_contract_failures": kb_failed,
         "contract_slo": contract_slo,
         "sample_blast_radius_from_stg_orders": blast_radius,
     }
@@ -81,6 +92,7 @@ def main() -> None:
     print(f"row-count anomaly        : {row_result['is_anomaly']} ({row_result['method']}, score={row_result['score']:.2f})")
     print(f"freshness minutes        : {freshness_minutes:.1f}")
     print(f"KB length anomaly        : {text_result['is_anomaly']}")
+    print(f"KB contract failures     : {len(kb_failed)}")
     print(f"sample blast radius      : {', '.join(blast_radius)}")
     print(f"report                    : {out.relative_to(ROOT)}")
 

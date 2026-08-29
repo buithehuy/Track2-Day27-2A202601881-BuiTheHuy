@@ -49,3 +49,11 @@ Khong can copy full conversation. Ghi cac decision quan trong.
 - Evidence/test: Great Expectations documentation defines Checkpoint as the production validation abstraction and supports actions based on validation results.
 - Accept / reject / revise: Accept
 - Why: This gives a stable place to add severity-based actions without changing the student API.
+
+## Decision 7
+- Hypothesis: The baseline runner should not page on the healthy generated batch solely because the static history has a different weekday volume pattern.
+- Prompt / request to agent: Keep weekday context available while avoiding a false alert in the supplied healthy fixture.
+- Agent proposal: Use a broad robust trailing history in `run_baseline.py`; let the stable API support same-segment history when a caller has a trustworthy segment.
+- Evidence/test: The generated healthy batch has about 600 rows while historical Saturday values are about 235–268; direct same-weekday comparison produced a false anomaly.
+- Accept / reject / revise: Accept
+- Why: Separates caller data selection from detector capability and preserves seasonality support for valid contexts.
