@@ -1,4 +1,4 @@
-PYTHON ?= python
+PYTHON ?= python3
 
 .PHONY: reset baseline tests gx dbt dashboard generate
 
