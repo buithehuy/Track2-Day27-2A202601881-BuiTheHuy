@@ -42,10 +42,17 @@ def evaluate_multiwindow_burn(
     Starter intentionally never pages. Hidden evaluation contains cases that
     require distinguishing sustained fast burn from a transient spike.
     """
+    if short_window_burn < 0 or long_window_burn < 0:
+        raise ValueError("burn rates must be non-negative")
+    # Short window confirms fast current impact; long window confirms persistence.
+    fast = short_window_burn >= 14.0
+    sustained = long_window_burn >= 2.0
+    page = bool(fast and sustained)
+    severity = "critical" if page else ("warning" if fast or sustained else "info")
     return {
-        "page": False,
-        "severity": "info",
-        "reason": "starter_policy_not_implemented",
+        "page": page,
+        "severity": severity,
+        "reason": "sustained_fast_burn" if page else "transient_or_low_burn",
         "short_window_burn": short_window_burn,
         "long_window_burn": long_window_burn,
     }

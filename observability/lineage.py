@@ -34,7 +34,17 @@ def get_column_downstream(
 
     Starter returns only direct children, so transitive hidden cases will fail.
     """
-    return list(column_graph.get(start_column, []))
+    seen = {start_column}
+    q: deque[str] = deque([start_column])
+    out: list[str] = []
+    while q:
+        node = q.popleft()
+        for child in column_graph.get(node, []):
+            if child not in seen:
+                seen.add(child)
+                out.append(child)
+                q.append(child)
+    return out
 
 
 def extract_dbt_dataset_graph(manifest_path: str | Path) -> dict[str, list[str]]:
