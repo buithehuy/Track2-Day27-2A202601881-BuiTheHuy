@@ -74,7 +74,7 @@ def validate_dataframe(
     reference_time: Any | None = None,
 ) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
-    columns = contract.get("columns", {})
+    columns = contract.get("columns") or contract.get("fields", {})
 
     for column, rules in columns.items():
         severity = rules.get("severity", "warning")
@@ -146,6 +146,17 @@ def validate_dataframe(
                     details=f"invalid_count={invalid_count}; accepted={accepted}",
                 )
             )
+
+        if "min_length" in rules:
+            lengths = series.map(lambda value: len(str(value)) if pd.notna(value) else 0)
+            invalid_count = int((series.notna() & (lengths < int(rules["min_length"]))).sum())
+            issues.append(_issue(
+                "min_length",
+                column=column,
+                severity=severity,
+                passed=(invalid_count == 0),
+                details=f"invalid_count={invalid_count}; min_length={rules['min_length']}",
+            ))
 
         # Starter numeric range support. Type validation is intentionally minimal.
         if "min" in rules or "max" in rules:

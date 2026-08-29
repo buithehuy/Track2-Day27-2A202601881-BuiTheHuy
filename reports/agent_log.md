@@ -57,3 +57,11 @@ Khong can copy full conversation. Ghi cac decision quan trong.
 - Evidence/test: The generated healthy batch has about 600 rows while historical Saturday values are about 235–268; direct same-weekday comparison produced a false anomaly.
 - Accept / reject / revise: Accept
 - Why: Separates caller data selection from detector capability and preserves seasonality support for valid contexts.
+
+## Decision 8
+- Hypothesis: KB freshness and minimum content length belong in the same contract validation layer as orders.
+- Prompt / request to agent: Reuse the validator for `kb_contract.yaml` and expose stale KB evidence in the baseline report.
+- Agent proposal: Support both `columns` and `fields`, add `min_length`, and pass an explicit UTC reference time from the baseline runner.
+- Evidence/test: `stale_kb` changed publish timestamps by three hours; baseline then reported one KB contract failure while healthy reset reported zero.
+- Accept / reject / revise: Accept
+- Why: It detects the public stale-KB fault without changing the stable orders API.
