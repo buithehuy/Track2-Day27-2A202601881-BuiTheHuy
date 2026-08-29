@@ -17,6 +17,16 @@ import pandas as pd
 import yaml
 
 
+_SEVERITY_ORDER = {"info": 0, "warning": 1, "critical": 2}
+
+
+def _action_for_severity(severity: str) -> str:
+    """Map contract severity to a safe default operational action."""
+    return {"critical": "block", "warning": "warn", "info": "log"}.get(
+        severity, "warn"
+    )
+
+
 def _issue(
     check: str,
     *,
@@ -29,9 +39,27 @@ def _issue(
         "check": check,
         "column": column,
         "severity": severity,
+        "action": _action_for_severity(severity),
         "passed": bool(passed),
         "details": details,
     }
+
+
+def _type_failure_mask(series: pd.Series, declared_type: str) -> pd.Series:
+    """Return rows that violate a declared contract type without coercing data."""
+    non_null = series.notna()
+    if declared_type == "string":
+        return non_null & ~series.map(lambda value: isinstance(value, str))
+    if declared_type == "integer":
+        numeric = pd.to_numeric(series, errors="coerce")
+        return non_null & (numeric.isna() | (numeric % 1 != 0))
+    if declared_type == "number":
+        numeric = pd.to_numeric(series, errors="coerce")
+        return non_null & numeric.isna()
+    if declared_type == "datetime":
+        parsed = pd.to_datetime(series, errors="coerce", utc=True)
+        return non_null & parsed.isna()
+    return pd.Series(False, index=series.index)
 
 
 def load_contract(path: str | Path) -> dict[str, Any]:
@@ -61,6 +89,20 @@ def validate_dataframe(df: pd.DataFrame, contract: dict[str, Any]) -> list[dict[
             continue
 
         series = df[column]
+
+        declared_type = rules.get("type")
+        if declared_type:
+            invalid_type = _type_failure_mask(series, str(declared_type))
+            invalid_count = int(invalid_type.sum())
+            issues.append(
+                _issue(
+                    "type",
+                    column=column,
+                    severity=severity,
+                    passed=(invalid_count == 0),
+                    details=f"declared={declared_type}; invalid_count={invalid_count}",
+                )
+            )
 
         if required:
             null_count = int(series.isna().sum())
@@ -108,6 +150,8 @@ def validate_dataframe(df: pd.DataFrame, contract: dict[str, Any]) -> list[dict[
                 invalid |= numeric < rules["min"]
             if "max" in rules:
                 invalid |= numeric > rules["max"]
+            # Values rejected by type validation are not range violations.
+            invalid &= numeric.notna()
             invalid_count = int(invalid.fillna(False).sum())
             issues.append(
                 _issue(
@@ -119,10 +163,6 @@ def validate_dataframe(df: pd.DataFrame, contract: dict[str, Any]) -> list[dict[
                 )
             )
 
-    # TODO(student): validate contract-level freshness using contract['freshness'].
-    # TODO(student): validate declared data types. pd.to_numeric(..., errors='coerce')
-    #                can silently hide string/type drift if you do not check it explicitly.
-
     return issues
 
 
@@ -130,6 +170,9 @@ def failed_issues(issues: list[dict[str, Any]], min_severity: str | None = None)
     failed = [i for i in issues if not i.get("passed", False)]
     if min_severity is None:
         return failed
-    order = {"info": 0, "warning": 1, "critical": 2}
-    threshold = order[min_severity]
-    return [i for i in failed if order.get(i.get("severity", "warning"), 1) >= threshold]
+    threshold = _SEVERITY_ORDER[min_severity]
+    return [
+        i
+        for i in failed
+        if _SEVERITY_ORDER.get(i.get("severity", "warning"), 1) >= threshold
+    ]
