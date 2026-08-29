@@ -46,14 +46,24 @@ def main() -> None:
         ),
     ]
 
-    all_ok = True
+    suite = context.suites.add(gx.core.expectation_suite.ExpectationSuite(name="orders_suite"))
     for expectation in expectations:
-        result = batch.validate(expectation)
-        all_ok = all_ok and bool(result.success)
-        print(f"{expectation.__class__.__name__:<40} success={result.success}")
-
-    print("\nStarter GX result:", "PASS" if all_ok else "FAIL")
-    print("TODO: package these expectations into a Suite + ValidationDefinition + Checkpoint + Actions.")
+        suite.add_expectation(expectation)
+    validation_definition = context.validation_definitions.add(
+        gx.core.validation_definition.ValidationDefinition(
+            name="orders_validation", data=batch_definition, suite=suite
+        )
+    )
+    checkpoint = context.checkpoints.add(
+        gx.Checkpoint(
+            name="orders_checkpoint",
+            validation_definitions=[validation_definition],
+            result_format="SUMMARY",
+        )
+    )
+    result = checkpoint.run(batch_parameters={"dataframe": df})
+    print("\nGX checkpoint result:", "PASS" if result.success else "FAIL")
+    print("Validation definitions:", len(result.run_results))
 
 
 if __name__ == "__main__":

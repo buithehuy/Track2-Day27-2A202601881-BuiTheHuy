@@ -33,3 +33,19 @@ Khong can copy full conversation. Ghi cac decision quan trong.
 - Evidence/test: Public fixture timestamps are fixed at 2026-08-28 while the lab environment date is 2026-08-29; the contract threshold is 30 minutes.
 - Accept / reject / revise: Revise next step
 - Why: Freshness remains required, but needs a controlled `as_of` strategy compatible with both public and hidden evaluation.
+
+## Decision 5
+- Hypothesis: Revenue can inflate when multiple active customer dimension rows match one order.
+- Prompt / request to agent: Write the smallest dbt unit test exposing the duplicate-active-version case, then make the model deterministic.
+- Agent proposal: Add a unit test with two active C0001 versions and deduplicate by latest `valid_from` before joining.
+- Evidence/test: `fct_daily_revenue.sql` joins all active rows; the expected two orders totaling 170.0 would otherwise become four rows totaling 340.0.
+- Accept / reject / revise: Accept
+- Why: The test captures transformation correctness, not only schema validity.
+
+## Decision 6
+- Hypothesis: Reliability checks should be packaged into repeatable validation flows.
+- Prompt / request to agent: Convert the GX one-expectation-at-a-time example into Suite, ValidationDefinition, and Checkpoint.
+- Agent proposal: Build one reusable suite and run it through a Checkpoint with summary results.
+- Evidence/test: Great Expectations documentation defines Checkpoint as the production validation abstraction and supports actions based on validation results.
+- Accept / reject / revise: Accept
+- Why: This gives a stable place to add severity-based actions without changing the student API.
